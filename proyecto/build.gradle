@@ -1,0 +1,138 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'com.google.protobuf' version '0.8.17' //plugin para incluir la compilación de gRPC, ver: https://github.com/grpc/grpc-java#generated-code
+    id 'idea' //plugins para la integración con el IDEA.
+}
+
+group = 'pucmm.edu'
+version = '1.0-SNAPSHOT'
+String openapi =  "5.3.2"
+
+mainClassName='pucmm.edu.Main'
+
+repositories {
+    mavenCentral()
+    maven{
+        url "https://maven.reposilite.com/snapshots"
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    //dependencia de Javalin
+    implementation("io.javalin:javalin:5.6.1")
+
+    //manejo de log.
+    implementation "org.slf4j:slf4j-simple:2.0.3"
+
+    // En la versión 5.3.X separaron las clases del renderizado en otro proyecto
+    implementation("io.javalin:javalin-rendering:5.6.1")
+
+
+    //sistemas de plantilla:
+    implementation 'org.apache.velocity:velocity-engine-core:2.3'
+    // MORPHIA ODM
+    implementation 'dev.morphia.morphia:morphia-core:2.2.6'
+//    implementation 'dev.morphia.morphia:morphia-core:2.4.0'
+    implementation group: 'org.mongodb', name: 'mongodb-driver-sync', version: '4.10.2'
+
+    //libreria jsoup.
+    implementation group: 'org.jsoup', name: 'jsoup', version: '1.15.3'
+
+    //Procesamiento JSON.
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4.1'
+
+    //libreria para SOAP de Jetty https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-http-spi
+    implementation group: 'org.eclipse.jetty', name: 'jetty-http-spi', version: '11.0.13'
+
+    //incluyendo las librerias de javax.ee en java 11.
+    //https://www.baeldung.com/java-soap-web-service
+    implementation "jakarta.servlet:jakarta.servlet-api:4.0.3"
+    implementation "jakarta.activation:jakarta.activation-api:1.2.2"
+    implementation "jakarta.xml.ws:jakarta.xml.ws-api:4.0.0"
+    implementation "jakarta.xml.soap:jakarta.xml.soap-api:3.0.0"
+    implementation "com.sun.xml.messaging.saaj:saaj-impl:2.0.1"
+    implementation "com.sun.xml.ws:jaxws-rt:3.0.2"
+    //implementation "com.sun.xml.ws:jaxws-ri:3.0.2"
+    //implementation "org.glassfish.jaxb:jaxb-runtime:3.0.2"
+
+    // //Agregando el OpenApi, ver https://github.com/javalin/javalin-openapi/wiki
+    annotationProcessor("io.javalin.community.openapi:openapi-annotation-processor:$openapi")
+    implementation("io.javalin.community.openapi:javalin-openapi-plugin:$openapi") // for /openapi route with JSON scheme
+    implementation("io.javalin.community.openapi:javalin-swagger-plugin:$openapi") // for Swagger UI
+    implementation("io.javalin.community.openapi:javalin-redoc-plugin:$openapi") // for ReDoc UI
+
+    // JASYPT
+    implementation 'org.jasypt:jasypt:1.9.2'
+    implementation 'com.auth0:java-jwt:4.4.0'
+    implementation 'com.github.kmehrunes:javalin-jwt:0.7.0'
+
+    //Librerías necesarias para para implementar gRPC y Protobuf, ver: https://github.com/grpc/grpc-java
+    implementation 'io.grpc:grpc-netty-shaded:1.39.0'
+    implementation 'io.grpc:grpc-protobuf:1.39.0'
+    implementation 'io.grpc:grpc-stub:1.39.0'
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53' // necessary for Java 9+
+
+}
+
+shadowJar{
+    archiveBaseName.set("app")
+    archiveClassifier.set('')
+    archiveVersion.set('')
+}
+
+//Tareas para la generación del código.
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.17.2"
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.39.0'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+
+    generatedFilesBaseDir = "$projectDir/generated"
+}
+
+//Tareas para integrar con el
+clean {
+    delete protobuf.generatedFilesBaseDir
+}
+
+idea {
+    module {
+        // proto files and generated Java files are automatically added as
+        // source dirs.
+        // If you have additional sources, add them here:
+        sourceDirs += file("src/generated");
+    }
+}
+
+
+//Permitir tener acceso a la entrada estandar por Gradle
+run{
+    standardInput = System.in
+}
+
+/**
+ * tarea necesaria para heroku si optamos por la tarea de Shadowjar
+ * en el archivo Procfile debe estar el siguiente comando:
+ * web: java -jar build/libs/app.jar
+ */
+task stage {
+    dependsOn shadowJar
+}
+
+
+test {
+    useJUnitPlatform()
+}

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <script
+    src="https://code.jquery.com/jquery-3.6.0.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script>
+    var opcionesGPS = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    }
+    var token = '';
+    function loginFuncion() {
+      var login = {
+        usuario: $("#id-username").val(),
+        clave: $("#id-password").val(),
+      }
+
+      $.ajax({
+        type: "POST",
+        url: "https://prueba.playdomtv.me/rest/login",
+        data: JSON.stringify(login),
+        success: function (response) {
+          if (response.jwt) {
+            token = response.jwt;
+            imprimirMsg("Su Token: " + response.jwt);
+          } else {
+            token = '';
+            console.log(response);
+            imprimirMsg(response);
+          }
+        },
+        error: function (e) {
+          alert("ERROR: ", e);
+          console.log("ERROR: ", e);
+        },
+      });
+    }
+
+    function agregarFormulario() {
+      var reader = new FileReader();
+      var imgD = document.querySelector("input[type=file]").files[0];
+      var base64 = "";
+      reader.addEventListener("load", function () {
+        base64 = reader.result;
+
+        navigator.geolocation.getCurrentPosition(function(geodata){
+          var coordenadas = geodata.coords;
+
+          var formulario = {
+            nombre: $("#id-nombre").val(),
+            sector: $("#id-sector").val(),
+            nivel: $("#id-nivel").val(),
+            latitude: coordenadas.latitude,
+            longitude: coordenadas.longitude,
+            accuracy: coordenadas.accuracy,
+            mimetype: imgD.type,
+            base64: base64.split(",")[1]
+          }
+
+          $.ajax({
+            type: "POST",
+            url: "https://prueba.playdomtv.me/rest/form",
+            headers: {"Authorization": "Bearer " + token},
+            data: JSON.stringify(formulario),
+            success: function (response) {
+              if (response.nombre) {
+                imprimirMsg("Formulario Creado exitosamente");
+              } else {
+                console.log(response);
+                imprimirMsg(response);
+              }
+            },
+            error: function (xhr, status, error) {
+              if (error == 'Unauthorized') {
+                imprimirMsg("Missing or invalid token");
+              } else {
+                imprimirMsg("Ocurrio un error inesperado");
+              }
+            },
+          });
+        })
+      })
+      if (imgD && $("#id-nombre").val() && $("#id-sector").val() && $("#id-nivel").val()) {
+        // CHECK IF THE FILE IS AN IMAGE
+        reader.readAsDataURL(imgD);
+      }
+      else {
+        base64 = "";
+        imprimirMsg("No puede dejar datos vacios");
+      }
+    }
+
+    function listarDatos() {
+      $.ajax({
+        type: "GET",
+        url: "https://prueba.playdomtv.me/rest/form",
+        headers: {"Authorization": "Bearer " + token},
+        success: function (response) {
+          imprimirTabla(response);
+        },
+        error: function (xhr, status, error) {
+          if (error == 'Unauthorized') {
+            imprimirMsg("Missing or invalid token");
+          } else {
+            imprimirMsg("Ocurrio un error inesperado");
+          }
+        },
+      });
+    }
+
+    function listarDatosxUser() {
+      var usuario = prompt("Indique el username: ");
+      $.ajax({
+        type: "GET",
+        url: "https://prueba.playdomtv.me/rest/form?usuario="+usuario,
+        headers: {"Authorization": "Bearer " + token},
+        success: function (response) {
+          if (typeof response === 'string' ) {
+            imprimirMsg(response);
+          } else {
+            imprimirTabla(response); 
+          }
+        },
+        error: function (xhr, status, error) {
+          if (error == 'Unauthorized') {
+            imprimirMsg("Missing or invalid token");
+          } else {
+            imprimirMsg("Ocurrio un error inesperado");
+          }
+        },
+      });
+    }
+
+    function imprimirMsg(msg){
+      var tmp = "<p style='color:red'>"+ msg +"</p>";
+      document.getElementById("listaFormulario").innerHTML="";
+      document.getElementById("listaFormulario").innerHTML=tmp;
+    }
+
+    function imprimirTabla(lista_formularios) {
+      //creando la tabla...
+      var tabla = document.createElement("table");
+      var filaTabla = tabla.insertRow();
+      filaTabla.insertCell().textContent = "Nombre";
+      filaTabla.insertCell().textContent = "Sector";
+      filaTabla.insertCell().textContent = "Nivel Escolar";
+
+      for (var key in lista_formularios) {
+          //
+          filaTabla = tabla.insertRow();
+          filaTabla.insertCell().textContent = ""+lista_formularios[key].nombre;
+          filaTabla.insertCell().textContent = ""+lista_formularios[key].sector;
+          filaTabla.insertCell().textContent = ""+lista_formularios[key].nivelEscolar;
+      }
+
+      document.getElementById("listaFormulario").innerHTML="";
+      document.getElementById("listaFormulario").appendChild(tabla);
+    }
+  </script>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cliente Api Rest</title>
+  </head>
+  <body>
+    <div>
+      <form id="LoginForm" onsubmit="return false">
+        <h1>Login Form</h1>
+        <div>
+          <label for="id-username">Username:</label>
+          <input type="text" size="15" id="id-username" name="Username" />
+        </div>
+        <div>
+          <label for="id-password">Password:</label>
+          <input type="password" size="15" id="id-password" name="Password" />
+        </div>
+        <div id="LoginButtonDiv">
+          <button onclick="loginFuncion()">Generate JWT</button>
+        </div>
+      </form>
+    </div>
+    <div>
+      <h1>Crud Formularios</h1>
+      Nombre: <input type="text" id="id-nombre" /><br />
+      Sector: <input type="text" id="id-sector" /> <br />
+      Nivel Escolar: <input type="text" id="id-nivel" /><br />
+      Foto: <input id="foto" type="file" name="foto" accept="image/*" /><br />
+      <button onclick="agregarFormulario()">Guardar</button>
+      <button onclick="listarDatosxUser()">Buscar Formulario Por Usuario</button>
+      <button onclick="listarDatos()">Listar Todos Formulario</button>
+      <div id="listaFormulario"></div>
+    </div>
+  </body>
+</html>

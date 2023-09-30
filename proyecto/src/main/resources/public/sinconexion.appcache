@@ -1,0 +1,55 @@
+CACHE MANIFEST
+# v12 - Para obligar al cambio bueno mantener una versión.
+# Esto es un comentario.
+
+#Trama que indica que 
+CACHE:
+/icons/font-awesome/fonts/fontawesome-webfont3e6e.woff2?v=4.7.0
+/icons/font-awesome/fonts/fontawesome-webfont3e6e.woff?v=4.7.0
+/icons/font-awesome/fonts/fontawesome-webfont3e6e.ttf?v=4.7.0
+/icons/simple-line-icons/fonts/Simple-Line-Icons4c82.ttf?-i3a2kk
+/icons/simple-line-icons/fonts/Simple-Line-Icons4c82.woff2?-i3a2kk
+/icons/simple-line-icons/fonts/Simple-Line-Icons4c82.woff?-i3a2kk
+/images/tv.png
+/plugins/tables/css/datatable/dataTables.bootstrap4.min.css
+/images/playdom.png
+/images/user/form-user.png
+/plugins/validation/jquery.validate.min.js
+/plugins/validation/jquery.validate-init.js
+/plugins/tables/js/jquery.dataTables.min.js
+/plugins/tables/js/datatable/dataTables.bootstrap4.min.js
+/plugins/tables/js/datatable-init/datatable-basic.min.js
+/js/styleSwitcher.js
+/icons/font-awesome/css/font-awesome.min.css
+/icons/simple-line-icons/css/simple-line-icons.css
+/icons/weather-icons/css/weather-icons.min.css
+/icons/cryptocoins/css/cryptocoins.css
+/icons/cryptocoins/css/cryptocoins-colors.css
+/icons/linea-icons/linea.css
+/icons/ionicons/css/ionicons.css
+/icons/themify-icons/themify-icons.css
+/icons/flag-icon-css/flag-icon.min.css
+/icons/material-design-iconic-font/materialdesignicons.min.css
+/icons/pe-icon-set-weather/css/pe-icon-set-weather.min.css
+/plugins/animate/animate.min.css
+/plugins/metismenu/css/metisMenu.min.css
+/plugins/bootstrap-select/dist/css/bootstrap-select.min.css
+/css/style.css
+/css/style.css.map
+/plugins/common/common.min.js
+/js/custom.min.js
+/js/settings.js
+/js/gleek.js
+/offline
+/tabla
+/crear
+/css/webcam-demo.css
+/js/jquery-3.3.1.min.js
+/js/webcam-easy.min.js
+
+NETWORK:
+/
+/api/*
+
+FALLBACK:
+/ /offline

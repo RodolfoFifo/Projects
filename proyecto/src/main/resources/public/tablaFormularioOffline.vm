@@ -1,0 +1,218 @@
+#parse("public/layout.vm")
+#@mainLayout()
+<script>
+    localStorage.removeItem("idForm");
+    var webSocket;
+    var tiempoReconectar = 5000;
+
+    //dependiendo el navegador busco la referencia del objeto.
+    var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB
+
+    //indicamos el nombre y la versión
+    var dataBase = indexedDB.open("proyecto_final", 1);
+
+    var opcionesGPS = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    }
+
+    //se ejecuta la primera vez que se crea la estructura
+    //o se cambia la versión de la base de datos.
+    dataBase.onupgradeneeded = function (e) {
+        console.log("Creando la estructura de la tabla");
+
+        //obteniendo la conexión activa
+        active = dataBase.result;
+
+        //creando la colección:
+        //En este caso, la colección, tendrá un ID autogenerado.
+        var formularios = active.createObjectStore("formularios", { keyPath : 'id', autoIncrement : true });
+    };
+
+    //El evento que se dispara una vez, lo
+    dataBase.onsuccess = function (e) {
+        console.log('Proceso ejecutado de forma correctamente');
+        listarDatos();
+        conectar();
+    };
+
+    dataBase.onerror = function (e) {
+        console.error('Error en el proceso: '+e.target.errorCode);
+    };
+
+    /**
+     * Permite listar todos los datos digitados.
+     */
+    function listarDatos() {
+        //por defecto si no lo indico el tipo de transacción será readonly
+        var data = dataBase.result.transaction(["formularios"]);
+        var formularios = data.objectStore("formularios");
+        var contador = 0;
+        var formularios_recuperados=[];
+        var dataFila = '';
+
+        //abriendo el cursor.
+        formularios.openCursor().onsuccess=function(e) {
+            //recuperando la posicion del cursor
+            var cursor = e.target.result;
+            if(cursor){
+                contador++;
+                //recuperando el objeto.
+                formularios_recuperados.push(cursor.value);
+
+                //Función que permite seguir recorriendo el cursor.
+                cursor.continue();
+
+            }else {
+                console.log("La cantidad de registros recuperados es: "+contador);
+            }
+        };
+
+        //Una vez que se realiza la operación llamo la impresión.
+        data.oncomplete = function () {
+            if(contador > 0){
+                for (var key in formularios_recuperados) {
+                    dataFila += '<tr>';
+                    dataFila += '<td>'+formularios_recuperados[key].id+'</td>';
+                    dataFila += '<td>'+formularios_recuperados[key].nombre+'</td>';
+                    dataFila += '<td>'+formularios_recuperados[key].sector+'</td>';
+                    dataFila += '<td>'+formularios_recuperados[key].nivel+'</td>';
+                    dataFila += '<td><span>';
+                    dataFila += '<a href="#" onclick="abrirForm('+formularios_recuperados[key].id+'); return false;" data-toggle="tooltip" data-placement="top" title="Editar"><i class="fa fa-pencil color-muted m-r-5"></i></a>';
+                    dataFila += '<a href="#" onclick="borrarFormulario('+formularios_recuperados[key].id+'); return false;" data-toggle="tooltip" data-placement="top" title="Eliminar"><i class="fa fa-remove color-danger ml-2"></i></a>';
+                    dataFila += "<a href='#' onclick='enviarForm("+JSON.stringify(formularios_recuperados[key])+"); return false;' data-toggle='tooltip' data-placement='top' title='Enviar'><i class='fa fa-send color-success ml-2'></i></a>";
+                    dataFila += '</span></td>';
+                    dataFila += '</tr>';
+                }
+            }
+            $('#tablaFormularios').html(dataFila);
+        }
+    }
+
+    function abrirForm(idForm){
+        localStorage.setItem("idForm", idForm);
+        window.location.replace("/crear");
+    }
+
+
+    function borrarFormulario(idForm) {
+        if (window.confirm("Esta seguro que desea borrar el formulario?")) {
+            var data = dataBase.result.transaction(["formularios"], "readwrite");
+            var formularios = data.objectStore("formularios");
+
+            formularios.delete(idForm).onsuccess = function (e) {
+                listarDatos();
+                alert('Formulario eliminado correctamente.');
+            };
+        }
+    }
+
+    function enviarForm(form){
+        verificarConexion();
+        if(webSocket && webSocket.readyState != 3){
+            navigator.geolocation.getCurrentPosition(function(geodata){
+                var coordenadas = geodata.coords;
+                var jsonForm = JSON.parse(JSON.stringify(form)); //change to obj
+                jsonForm.latitude = coordenadas.latitude; //add something
+                jsonForm.longitude = coordenadas.longitude; //add something
+                jsonForm.accuracy = coordenadas.accuracy; //add something
+                jsonForm = JSON.stringify(jsonForm); //change back to string
+                webSocket.send(jsonForm); 
+             }, function(){
+                 webSocket.send(JSON.stringify(form));
+             }, opcionesGPS);
+        }else{
+            alert("No se pudo enviar al servidor..");
+        }
+    }
+
+    /**
+        *
+        * @param mensaje
+        */
+    function recibirInformacionServidor(mensaje){
+        if(Number(mensaje.data) == 0){
+            alert("No se pudo registrar el formulario en el servidor debido a un error inesperado");
+        }else{
+            var data = dataBase.result.transaction(["formularios"], "readwrite");
+            var formularios = data.objectStore("formularios");
+
+            formularios.delete(Number(mensaje.data)).onsuccess = function (e) {
+                listarDatos();
+            };
+
+            alert('Formulario registrado correctamente en el servidor.');
+        }
+    }
+    
+    function conectar() {
+        webSocket = new WebSocket("wss://" + location.hostname + ":" + location.port + "/mensajeServidor");
+
+        //indicando los eventos:
+        webSocket.onmessage = function(data){recibirInformacionServidor(data);};
+        webSocket.onopen  = function(e){ console.log("Conectado - status "+this.readyState + " " + this.url); };
+        webSocket.onclose = function(e){
+            console.log("Desconectado - status "+this.readyState);
+        };
+    }
+
+    function verificarConexion(){
+        if(!webSocket || webSocket.readyState == 3){
+            conectar();
+        }
+    }
+
+    setInterval(verificarConexion, tiempoReconectar); //para reconectar.
+
+</script>
+<div class="content-body">
+
+    <div class="row page-titles mx-0">
+        <div class="col p-md-0">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item active"><a href="/">Home</a></li>
+            </ol>
+        </div>
+    </div>
+    <!-- row -->
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                       <h4 class="card-title">Formularios</h4>
+                       <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Sector</th>
+                                        <th>Nivel Escolar</th>
+                                        <th>Accion</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaFormularios">
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Sector</th>
+                                        <th>Nivel Escolar</th>
+                                        <th>Accion</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                       </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- #/ container -->
+</div>
+#end

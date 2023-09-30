@@ -1,0 +1,87 @@
+#parse("public/layout.vm")
+#@mainLayout()
+<div class="content-body">
+
+    <div class="row page-titles mx-0">
+        <div class="col p-md-0">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item active"><a href="/">Home</a></li>
+            </ol>
+        </div>
+    </div>
+    <!-- row -->
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        #if($usuarioSucceeded)
+                            <div class="alert alert-success alert-dismissible fade show">
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span>
+                                </button>$mensaje</div>
+                        #elseif($usuarioFailed)
+                            <div class="alert alert-danger alert-dismissible fade show">
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span>
+                                </button>$mensaje</div>
+                        #end
+                        <h4 class="card-title">Usuarios</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered zero-configuration">
+                                <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Usuario</th>
+                                    <th>Clave</th>
+                                    <th>Rol</th>
+                                    <th>Creado</th>
+                                    <th>Action</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                #foreach($user in $users)
+                                    <tr>
+                                        <td>$user.getNombre()</td>
+                                        <td>$user.getUsuario()</td>
+                                        <td>$user.getClave()</td>
+                                        #if($user.getRol() == "ROLE_ADMIN")
+                                            #set($rol = "administrador")
+                                        #elseif($user.getRol() == "ROLE_USUARIO")
+                                            #set($rol = "autor")
+                                        #else
+                                            #set($rol = $user.getRol())
+                                        #end
+                                        <td>$rol</td>
+                                        <td>$user.getFecha()</td>
+                                        <td><span>
+                                            <a href="/usuario?id=$user.getId()" data-toggle="tooltip" data-placement="top" title="Edit">
+                                                <i class="fa fa-pencil color-muted m-r-5"></i>
+                                            </a>
+                                            <a href="/eliminarUsuario?id=$user.getId()" onclick="return confirm('Esta seguro que desea borrar este usuario?');" data-toggle="tooltip" data-placement="top" title="Remove">
+                                                <i class="fa fa-remove color-danger m-r-5"></i>
+                                            </a>
+                                        </span></td>
+                                    </tr>
+                                #end
+                                </tbody>
+                                <tfoot>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Usuario</th>
+                                    <th>Clave</th>
+                                    <th>Rol</th>
+                                    <th>Creado</th>
+                                    <th>Last Action</th>
+                                </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- #/ container -->
+</div>
+#end

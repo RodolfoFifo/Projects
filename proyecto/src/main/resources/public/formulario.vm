@@ -1,0 +1,130 @@
+#parse("public/layout.vm")
+#@mainLayout()
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<div class="content-body">
+    <div class="row page-titles mx-0">
+        <div class="col p-md-0">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item active"><a href="/">Home</a></li>
+            </ol>
+        </div>
+    </div>
+    <!-- row -->
+
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        #if($formularioSucceeded)
+                            <div class="alert alert-success alert-dismissible fade show">
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span>
+                                </button>$mensaje</div>
+                        #elseif($formularioFailed)
+                            <div class="alert alert-danger alert-dismissible fade show">
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span>
+                                </button>$mensaje</div>
+                        #end
+                        <h4 class="card-title">Formulario</h4>
+                        <div class="form-validation">
+                            <form class="form-valide">
+                                <div class="form-group row">
+                                    <label class="col-lg-4 col-form-label" for="val-nombre">Nombre <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="col-lg-6">
+                                        <input type="text" class="form-control" id="val-nombre" name="val-nombre" value= "$form.getNombre()" placeholder="Ingrese su nombre.." disabled>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-lg-4 col-form-label" for="val-sector">Sector <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="col-lg-6">
+                                        <input type="text" class="form-control" id="val-sector" name="val-sector" value="$form.getSector()" placeholder="Su sector.." disabled>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-lg-4 col-form-label" for="val-nivel">Nivel Escolar <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="col-lg-6">
+                                        <select class="form-control" id="val-nivel" name="val-nivel" disabled>
+                                            <option value="">Please select</option>
+                                            #if($form.getNivelEscolar() == "basico")
+                                                <option value="basico" selected>Basico</option>
+                                            #else
+                                                <option value="basico">Basico</option>
+                                            #end
+                                            #if($form.getNivelEscolar() == "medio")
+                                                <option value="medio" selected>Medio</option>
+                                            #else
+                                                <option value="medio">Medio</option>
+                                            #end
+                                            #if($form.getNivelEscolar() == "grado")
+                                                <option value="grado" selected>Grado</option>
+                                            #else
+                                                <option value="grado">Grado</option>
+                                            #end
+                                            #if($form.getNivelEscolar() == "postgrado")
+                                                <option value="postgrado" selected>Postgrado</option>
+                                            #else
+                                                <option value="postgrado">Postgrado</option>
+                                            #end
+                                            #if($form.getNivelEscolar() == "doctorado")
+                                                <option value="doctorado" selected>Doctorado</option>
+                                            #else
+                                                <option value="doctorado">Doctorado</option>
+                                            #end
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-lg-4 col-form-label" for="val-foto">Foto</label>
+                                    <div class="col-lg-6">
+                                        <div class="card">
+                                            <img src="data:${form.getFoto().getMimeType()};base64,$form.getFoto().getFotoBase64()" class="card-img-top" alt="Foto enviada">
+                                            <div class="card-body">
+                                                <h5 class="card-title">$form.getFoto().getNombre()</h5>
+                                                <p class="card-text">Foto del tipo: $form.getFoto().getMimeType()</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label class="col-lg-4 col-form-label" for="val-mapa">Mapa</label>
+                                    <div class="col-lg-6">
+                                        <div class="geolocation" id="miMapa"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-lg-8 ml-auto">
+                                        <a href="/formularios" class="btn btn-primary">
+                                            OK
+                                        </a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- #/ container -->
+</div>
+<script>
+    console.log("$form.getLatitude()");
+    var latitude = "$form.getLatitude()";
+    var longitude = "$form.getLongitude()";
+    var accuracy = "$form.getAccuracy()";
+    
+    let map = L.map('miMapa').setView([parseFloat(latitude), parseFloat(longitude)], 15);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    L.marker([parseFloat(latitude), parseFloat(longitude)]).addTo(map).bindPopup("Latitud: "+latitude+"\nLongitud: "+longitude+"\nPrecision: "+accuracy).openPopup();
+
+</script>
+#end
